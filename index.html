@@ -6,6 +6,183 @@
 <title>PEAK GOLF — 自分史上最高のゴルフへ</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, orderBy, query }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyByUItwob4nyagm_WRgyhkEmJ2xNxYrYRc",
+  authDomain: "peak-self.firebaseapp.com",
+  projectId: "peak-self",
+  storageBucket: "peak-self.firebasestorage.app",
+  messagingSenderId: "58858314342",
+  appId: "1:58858314342:web:4c3a0d3ea03561f9322ba7"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const ADMIN_EMAIL = 'coachfeaturing@gmail.com';
+const todayKeyFB = new Date().toISOString().slice(0,10);
+
+// ——— AUTH STATE ———
+onAuthStateChanged(auth, user => {
+  if(user){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('appScreen').style.display='block';
+    document.getElementById('userEmail').textContent=user.email;
+    document.getElementById('userAvatar').src=user.photoURL||'';
+    if(user.email===ADMIN_EMAIL) document.getElementById('adminTabBtn').style.display='inline-flex';
+    loadFromFirebase(user.uid);
+  } else {
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('appScreen').style.display='none';
+  }
+});
+
+window.loginWithGoogle = async () => {
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); } catch(e){ console.error(e); }
+};
+window.logout = async () => { await signOut(auth); };
+
+// ——— SAVE TO FIREBASE ———
+window.saveToFirebase = async () => {
+  const user = auth.currentUser; if(!user) return;
+  const data = {
+    date: todayKeyFB, uid: user.uid, email: user.email, displayName: user.displayName||'',
+    goals: {
+      dream: document.getElementById('gDream').value,
+      y3: document.getElementById('g3').value,
+      y2: document.getElementById('g2').value,
+      y1: document.getElementById('g1').value,
+    },
+    kpis: [1,2,3,4,5,6].map(i=>document.getElementById('kpi'+i).value),
+    score: { total: document.getElementById('scoreTotal').value, putts: document.getElementById('scorePutts').value, course: document.getElementById('scoreCourse').value },
+    round: { checks: window.rchecks||[], perf: document.getElementById('rt_perf').value, mng: document.getElementById('rt_mng').value, short: document.getElementById('rt_short').value, action: document.getElementById('rt_action').value },
+    condition: window.metrics||[],
+    holeEmotions: window.holeEmotions||[],
+    memo: document.getElementById('memoText').value,
+    savedAt: new Date().toISOString(),
+  };
+  try {
+    await setDoc(doc(db,'golf_users',user.uid,'records',todayKeyFB), data);
+    // update profile
+    const pRef = doc(db,'golf_profiles',user.uid);
+    const pSnap = await getDoc(pRef);
+    let p = pSnap.exists() ? pSnap.data() : {totalXP:0,streak:0,totalDays:0,achievements:[],lastSaveDate:''};
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yKey = yesterday.toISOString().slice(0,10);
+    if(p.lastSaveDate!==todayKeyFB){
+      p.streak = (p.lastSaveDate===yKey)?(p.streak||0)+1:1;
+      p.totalDays = (p.totalDays||0)+1;
+      p.totalXP = (p.totalXP||0)+20;
+      p.lastSaveDate = todayKeyFB;
+    }
+    if((window.rchecks||[]).every(Boolean) && !(p.achievements||[]).includes('routine_full')){
+      p.achievements=[...(p.achievements||[]),'routine_full']; p.totalXP+=15;
+    }
+    await setDoc(pRef, p);
+    window._golfProfile = p;
+    window.renderLvUI(p);
+    const toast=document.getElementById('toast');
+    toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2200);
+  } catch(e){ console.error(e); alert('保存エラー: '+e.message); }
+};
+
+// ——— LOAD FROM FIREBASE ———
+async function loadFromFirebase(uid){
+  try {
+    const snap = await getDoc(doc(db,'golf_users',uid,'records',todayKeyFB));
+    if(snap.exists()){
+      const d=snap.data();
+      if(d.goals){
+        ['dream','y3','y2','y1'].forEach(k=>{
+          const id=k==='dream'?'gDream':k==='y3'?'g3':k==='y2'?'g2':'g1';
+          const el=document.getElementById(id); if(el&&d.goals[k])el.value=d.goals[k];
+        });
+      }
+      if(d.kpis)d.kpis.forEach((v,i)=>{const el=document.getElementById('kpi'+(i+1));if(el)el.value=v;});
+      if(d.score){
+        if(d.score.total)document.getElementById('scoreTotal').value=d.score.total;
+        if(d.score.putts)document.getElementById('scorePutts').value=d.score.putts;
+        if(d.score.course)document.getElementById('scoreCourse').value=d.score.course;
+      }
+      if(d.round){
+        if(d.round.checks)d.round.checks.forEach((v,i)=>{if(v){document.getElementById('rc'+i).checked=true;window.toggleRCheck(i);}});
+        if(d.round.perf)document.getElementById('rt_perf').value=d.round.perf;
+        if(d.round.mng)document.getElementById('rt_mng').value=d.round.mng;
+        if(d.round.short)document.getElementById('rt_short').value=d.round.short;
+        if(d.round.action)document.getElementById('rt_action').value=d.round.action;
+      }
+      if(d.condition)d.condition.forEach((v,i)=>{
+        const inputs=document.querySelectorAll('input[type=\"range\"]');
+        if(inputs[i]){inputs[i].value=v;window.updateMetric(i,v);}
+      });
+      if(d.holeEmotions)d.holeEmotions.forEach((v,i)=>{
+        if(v!==''){const inp=document.getElementById('hole'+(i+1));if(inp){inp.value=v;window.updateEmotion(i,v);}}
+      });
+      if(d.memo)document.getElementById('memoText').value=d.memo;
+    }
+    const pSnap = await getDoc(doc(db,'golf_profiles',uid));
+    const p = pSnap.exists()?pSnap.data():{};
+    window._golfProfile=p; window.renderLvUI(p);
+  } catch(e){ console.error(e); }
+}
+
+// ——— ADMIN ———
+window.loadAdminData = async () => {
+  const user=auth.currentUser;
+  if(!user||user.email!==ADMIN_EMAIL) return;
+  document.getElementById('adminLoading').style.display='block';
+  document.getElementById('adminTable').innerHTML='';
+  try {
+    const profilesSnap = await getDocs(collection(db,'golf_profiles'));
+    const rows=[];
+    for(const pDoc of profilesSnap.docs){
+      const uid=pDoc.id; const profile=pDoc.data();
+      const rSnap=await getDocs(query(collection(db,'golf_users',uid,'records'),orderBy('date','desc')));
+      if(!rSnap.empty) rows.push({profile, latest:rSnap.docs[0].data()});
+    }
+    renderAdminTable(rows);
+  } catch(e){ console.error(e); }
+  document.getElementById('adminLoading').style.display='none';
+};
+
+function renderAdminTable(rows){
+  const c=document.getElementById('adminTable');
+  if(!rows.length){c.innerHTML='<p style="color:#596650;text-align:center;padding:32px">データがまだありません</p>';return;}
+  rows.forEach(({profile,latest})=>{
+    const total=(latest.condition||[]).reduce((a,b)=>a+b,0);
+    const routineDone=(latest.round?.checks||[]).filter(Boolean).length;
+    const score=latest.score?.total||'—';
+    const emotFilled=(latest.holeEmotions||[]).filter(v=>v!=='');
+    const emotAvg=emotFilled.length?(emotFilled.reduce((a,b)=>a+parseFloat(b),0)/emotFilled.length).toFixed(1):'—';
+    const div=document.createElement('div'); div.className='admin-card';
+    div.innerHTML=`
+      <div class="admin-card-header">
+        <div class="admin-name">${latest.displayName||latest.email}</div>
+        <div class="admin-date">${latest.date}</div>
+      </div>
+      <div class="admin-stats">
+        <div class="admin-stat"><span class="astat-num">${score}</span><span class="astat-lbl">スコア</span></div>
+        <div class="admin-stat"><span class="astat-num">${total}</span><span class="astat-lbl">コンディション/110</span></div>
+        <div class="admin-stat"><span class="astat-num">${routineDone}/7</span><span class="astat-lbl">ルーティン</span></div>
+        <div class="admin-stat"><span class="astat-num">${emotAvg}</span><span class="astat-lbl">感情平均</span></div>
+        <div class="admin-stat"><span class="astat-num">${profile.streak||0}</span><span class="astat-lbl">⛳連続</span></div>
+        <div class="admin-stat"><span class="astat-num">Lv.${calcLvNum(profile.totalXP||0)}</span><span class="astat-lbl">レベル</span></div>
+      </div>
+      ${latest.memo?`<div class="admin-memo">📝 ${latest.memo.slice(0,100)}${latest.memo.length>100?'...':''}</div>`:''}
+    `;
+    c.appendChild(div);
+  });
+}
+function calcLvNum(xp){
+  const LX=[100,150,220,300,400,520,660,820,1000,Infinity];
+  let lv=1;for(let i=0;i<LX.length;i++){if(xp<LX[i])return lv+i;if(i<LX.length-1)xp-=LX[i];}return 10;
+}
+</script>
 <style>
 :root {
   --bg: #0a0c0a;
@@ -201,14 +378,73 @@ input[type="range"]:hover::-webkit-slider-thumb{box-shadow:0 0 18px var(--green-
   .score-row{grid-template-columns:1fr 1fr}
   .stats-grid{grid-template-columns:repeat(3,1fr)}
 }
+
+/* LOGIN SCREEN */
+#loginScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;text-align:center}
+.login-brand-line{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.login-brand-line::before,.login-brand-line::after{content:'';flex:1;max-width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--green))}
+.login-brand-lbl{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:7px;color:var(--green2);opacity:.8}
+.login-h1{font-family:'Cormorant Garamond',serif;font-size:clamp(32px,6vw,52px);font-weight:300;line-height:1.2;margin-bottom:8px}
+.login-h1 em{font-style:italic;color:var(--green2)}
+.login-sub{font-size:11px;color:var(--text3);letter-spacing:3px;margin-bottom:48px}
+.login-divider{width:70px;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);margin:0 auto 48px}
+.google-btn{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border2);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:14px;font-weight:400;padding:14px 28px;border-radius:40px;cursor:pointer;transition:all .3s;letter-spacing:1px}
+.google-btn:hover{border-color:var(--green);background:var(--green-dim);box-shadow:0 0 24px var(--green-glow)}
+.google-icon{width:20px;height:20px;flex-shrink:0}
+#appScreen{display:none}
+
+/* USER BAR */
+.user-bar{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.user-avatar{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2)}
+.user-email{font-size:11px;color:var(--text3);letter-spacing:1px}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--text3);font-size:10px;letter-spacing:2px;padding:5px 14px;border-radius:20px;cursor:pointer;transition:all .2s;font-family:'Noto Sans JP',sans-serif}
+.logout-btn:hover{border-color:var(--green);color:var(--green2)}
+
+/* ADMIN */
+#adminTabBtn{display:none;border-color:rgba(138,191,106,.4);color:var(--xp)}
+#adminTabBtn.active{background:var(--xp-dim);border-color:var(--xp)}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:14px}
+.admin-card-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px}
+.admin-name{font-size:14px;font-weight:400;color:var(--text)}
+.admin-date{font-size:11px;color:var(--text3);letter-spacing:1px}
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.admin-stat{text-align:center;background:var(--bg3);border-radius:8px;padding:10px 6px}
+.astat-num{display:block;font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--green2);line-height:1;margin-bottom:3px}
+.astat-lbl{font-size:9px;color:var(--text3);letter-spacing:1px}
+.admin-memo{font-size:12px;color:var(--text3);line-height:1.6;border-top:1px solid var(--border);padding-top:10px}
+.admin-refresh-btn{display:block;width:100%;max-width:200px;margin:0 auto 20px;background:var(--xp-dim);border:1px solid var(--xp);color:var(--xp);font-family:'Noto Sans JP',sans-serif;font-size:12px;letter-spacing:2px;padding:10px 20px;border-radius:40px;cursor:pointer;transition:all .2s}
+.admin-refresh-btn:hover{background:rgba(138,191,106,.2)}
+#adminLoading{display:none;text-align:center;color:var(--text3);font-size:12px;letter-spacing:2px;padding:20px}
+@media(max-width:520px){.admin-stats{grid-template-columns:repeat(2,1fr)}}
+
 </style>
 </head>
 <body>
+
+<!-- ====== LOGIN SCREEN ====== -->
+<div id="loginScreen">
+  <div class="login-brand-line"><span class="login-brand-lbl">PEAK GOLF</span></div>
+  <h1 class="login-h1">自分史上<em>最高のゴルフ</em>へ</h1>
+  <p class="login-sub">MENTAL PERFORMANCE TRACKER FOR GOLF</p>
+  <div class="login-divider"></div>
+  <button class="google-btn" onclick="loginWithGoogle()">
+    <svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Googleアカウントでログイン
+  </button>
+</div>
+
+<!-- ====== APP SCREEN ====== -->
+<div id="appScreen">
 
 <header>
   <div class="brand-line"><span class="brand-label">PEAK GOLF</span></div>
   <h1>自分史上<em>最高のゴルフ</em>へ</h1>
   <p class="tagline">MENTAL PERFORMANCE TRACKER FOR GOLF</p>
+  <div class="user-bar">
+    <img class="user-avatar" id="userAvatar" src="" alt="">
+    <span class="user-email" id="userEmail"></span>
+    <button class="logout-btn" onclick="logout()">ログアウト</button>
+  </div>
   <div class="level-widget" onclick="showTab('status',null)">
     <div class="lv-badge" id="headerLv">Lv.1</div>
     <div class="lv-info">
@@ -226,6 +462,7 @@ input[type="range"]:hover::-webkit-slider-thumb{box-shadow:0 0 18px var(--green-
   <button class="tab-btn" onclick="showTab('condition',this)">CONDITION</button>
   <button class="tab-btn" onclick="showTab('memo',this)">MEMO</button>
   <button class="tab-btn" onclick="showTab('status',this)">⛳ STATUS</button>
+  <button class="tab-btn" id="adminTabBtn" onclick="showTab('admin',this)">👑 ADMIN</button>
 </nav>
 
 <main>
@@ -452,7 +689,17 @@ input[type="range"]:hover::-webkit-slider-thumb{box-shadow:0 0 18px var(--green-
   </div>
 </div>
 
+<!-- ADMIN -->
+<div id="admin" class="section">
+  <p class="today-badge">管理者ダッシュボード · PEAK GOLF</p>
+  <button class="admin-refresh-btn" onclick="loadAdminData()">⛳ データを読み込む</button>
+  <div id="adminLoading">読み込み中...</div>
+  <div id="adminTable"></div>
+</div>
+
 </main>
+
+</div><!-- /appScreen -->
 
 <!-- Level Up Modal -->
 <div class="lvup-overlay" id="lvupOverlay">
@@ -497,7 +744,7 @@ function calcLevel(xp){
   return{lv:1,xpIn:0,xpNeed:LV_XP[0]};
 }
 
-function renderLvUI(p){
+window.renderLvUI = function(p){
   const xp=p.totalXP||0,streak=p.streak||0,days=p.totalDays||0;
   const{lv,xpIn,xpNeed}=calcLevel(xp);
   const pct=Math.round(xpIn/xpNeed*100);
@@ -559,8 +806,8 @@ function showTab(id,btn){
 }
 
 // ——— ROUND CHECKS ———
-let rchecks=[false,false,false,false,false,false,false];
-function toggleRCheck(i){
+window.rchecks=[false,false,false,false,false,false,false]; let rchecks=window.rchecks;
+window.toggleRCheck = function(i){
   rchecks[i]=document.getElementById('rc'+i).checked;
   document.getElementById('rri'+i).classList.toggle('checked',rchecks[i]);
   const done=rchecks.filter(Boolean).length;
@@ -569,11 +816,11 @@ function toggleRCheck(i){
 }
 
 // ——— METRICS (10 items) ———
-let metrics=[5,5,5,5,5,5,5,5,5,5,5];
+window.metrics=[5,5,5,5,5,5,5,5,5,5,5]; let metrics=window.metrics;
 let chart=null;
 
 // ——— BUILD HOLE GRID ———
-let holeEmotions = new Array(18).fill('');
+window.holeEmotions = new Array(18).fill(''); let holeEmotions=window.holeEmotions;
 function buildHoleGrid(){
   const grid = document.getElementById('holeGrid');
   grid.innerHTML = '';
@@ -584,7 +831,7 @@ function buildHoleGrid(){
     grid.appendChild(cell);
   }
 }
-function updateEmotion(i, val){
+window.updateEmotion = function(i, val){
   holeEmotions[i] = val;
   const inp = document.getElementById('hole'+(i+1));
   if(inp) inp.classList.toggle('filled', val !== '');
@@ -598,7 +845,7 @@ function updateEmotion(i, val){
 }
 buildHoleGrid();
 
-function updateMetric(i,val){
+window.updateMetric = function(i,val){
   metrics[i]=parseInt(val);
   document.getElementById('v'+i).textContent=val;
   document.getElementById('totalScore').textContent=metrics.reduce((a,b)=>a+b,0);
@@ -647,7 +894,8 @@ function loadImg(input,goal,idx){
 }
 
 // ——— SAVE ———
-function saveAll(){
+function saveAll(){ window.saveToFirebase(); }
+function saveAll_local(){
   const p=getProfile();
   const yesterday=new Date(today);yesterday.setDate(yesterday.getDate()-1);
   const yKey=yesterday.toISOString().slice(0,10);
@@ -667,7 +915,7 @@ function saveAll(){
     holeEmotions: holeEmotions,
     memo:document.getElementById('memoText').value,
   };
-  localStorage.setItem('peakgolf_'+todayKey,JSON.stringify(data));
+  // data saved to Firebase via saveToFirebase()
 
   unlockAch('first');
   if(rchecks.every(Boolean)){unlockAch('routine_full');addXP(15,'☀️ ルーティン完了');}
@@ -721,8 +969,8 @@ function loadSaved(){
   }catch(e){}
 }
 
-loadSaved();
-renderLvUI(getProfile());
+// loadSaved() replaced by Firebase loadFromFirebase() called after auth
+// renderLvUI called after profile load
 </script>
 </body>
 </html>
