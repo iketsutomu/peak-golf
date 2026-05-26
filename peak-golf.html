@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PEAK GOLF — 自分史上最高のゴルフへ</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root {
+  --bg: #0a0c0a;
+  --bg2: #111410;
+  --bg3: #171a14;
+  --card: #141710;
+  --border: #252b1e;
+  --border2: #313d26;
+  --green: #7a9e5a;
+  --green2: #a8c87a;
+  --green-dim: rgba(122,158,90,0.10);
+  --green-glow: rgba(122,158,90,0.22);
+  --gold: #c4a45a;
+  --gold2: #dfc07a;
+  --gold-dim: rgba(196,164,90,0.10);
+  --text: #dde8cc;
+  --text2: #9aad80;
+  --text3: #596650;
+  --amber: #c47a3a;
+  --sky: #6a9aaa;
+  --xp: #8abf6a;
+  --xp-dim: rgba(138,191,106,0.12);
+  --radius: 12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden}
+
+/* Fairway grain */
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.5}
+
+/* Subtle green gradient bg */
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(60,90,30,0.18) 0%, transparent 70%);pointer-events:none;z-index:0}
+
+/* ——— HEADER ——— */
+header{text-align:center;padding:52px 24px 24px;position:relative;z-index:1}
+.brand-line{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.brand-line::before,.brand-line::after{content:'';flex:1;max-width:60px;height:1px;background:linear-gradient(90deg,transparent,var(--green))}
+.brand-label{font-family:'Cormorant Garamond',serif;font-size:10px;letter-spacing:7px;color:var(--green2);opacity:.8;font-weight:400}
+h1{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,5.5vw,52px);font-weight:300;letter-spacing:2px;line-height:1.15;color:var(--text)}
+h1 em{font-style:italic;color:var(--green2)}
+h1 .dash{color:var(--text3)}
+.tagline{font-size:11px;color:var(--text3);letter-spacing:4px;margin-top:8px}
+header::after{content:'';display:block;width:100px;height:1px;background:linear-gradient(90deg,transparent,var(--green),transparent);margin:20px auto 0}
+
+/* LEVEL WIDGET */
+.level-widget{display:inline-flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border2);border-radius:40px;padding:9px 22px;margin-top:18px;cursor:pointer;position:relative;overflow:hidden;transition:border-color .3s}
+.level-widget:hover{border-color:var(--green)}
+.level-widget::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--xp-dim),transparent);pointer-events:none}
+.lv-badge{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--xp);letter-spacing:1px}
+.lv-info{display:flex;flex-direction:column;gap:3px}
+.lv-title-sm{font-size:10px;color:var(--xp);letter-spacing:2.5px;font-weight:400}
+.lv-bar-wrap{width:110px;height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.lv-bar{height:100%;background:linear-gradient(90deg,var(--xp),var(--green2));border-radius:2px;transition:width .7s ease}
+.lv-xp-txt{font-size:9px;color:var(--text3);letter-spacing:1px}
+.lv-streak{font-size:10px;color:var(--amber);letter-spacing:1px}
+
+/* NAV */
+.nav-tabs{display:flex;justify-content:center;gap:4px;padding:20px 20px 28px;flex-wrap:wrap;position:relative;z-index:1}
+.tab-btn{background:none;border:1px solid var(--border);color:var(--text3);font-family:'Noto Sans JP',sans-serif;font-size:11px;font-weight:400;letter-spacing:2px;padding:9px 18px;border-radius:40px;cursor:pointer;transition:all .3s}
+.tab-btn:hover{border-color:var(--green);color:var(--green2)}
+.tab-btn.active{background:var(--green-dim);border-color:var(--green);color:var(--green2)}
+
+/* MAIN */
+main{max-width:860px;margin:0 auto;padding:0 20px 80px;position:relative;z-index:1}
+.section{display:none}
+.section.active{display:block;animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;margin-bottom:20px}
+.card-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;color:var(--green2);letter-spacing:1px;margin-bottom:22px;display:flex;align-items:center;gap:10px}
+.card-title::before{content:'';width:3px;height:20px;background:linear-gradient(180deg,var(--green),var(--green2));border-radius:2px;flex-shrink:0}
+
+/* INPUTS */
+textarea,input[type="text"]{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Noto Sans JP',sans-serif;font-size:13px;font-weight:300;padding:10px 14px;resize:vertical;transition:border-color .2s,background .2s;outline:none}
+textarea:focus,input[type="text"]:focus{border-color:var(--green);background:var(--bg2)}
+textarea::placeholder,input::placeholder{color:var(--text3);font-size:12px}
+
+/* GOAL BLOCKS */
+.goal-block{margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.goal-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.goal-block-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.goal-badge{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--green2);border:1px solid var(--border2);border-radius:20px;padding:3px 14px;letter-spacing:1.5px}
+.goal-badge.dream{border-color:rgba(196,164,90,.4);color:var(--gold2);background:var(--gold-dim)}
+.goal-images{display:flex;gap:8px;margin-top:10px}
+.goal-img-slot{width:80px;height:80px;border:1px dashed var(--border2);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;position:relative;flex-shrink:0;transition:border-color .2s}
+.goal-img-slot:hover{border-color:var(--green)}
+.goal-img-slot input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.goal-img-slot img{width:100%;height:100%;object-fit:cover;display:none;border-radius:7px}
+.goal-img-slot .slot-plus{font-size:18px;color:var(--text3);pointer-events:none}
+.goal-img-slot .slot-lbl{font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:2px;pointer-events:none}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi-item label{font-size:10px;letter-spacing:1.5px;color:var(--text3);display:block;margin-bottom:5px}
+
+/* ROUND ROUTINE */
+.routine-item{display:flex;align-items:flex-start;gap:16px;padding:16px 0;border-bottom:1px solid var(--border)}
+.routine-item:last-child{border-bottom:none}
+.check-wrap{position:relative;flex-shrink:0;margin-top:2px}
+.check-wrap input[type="checkbox"]{display:none}
+.check-box{width:22px;height:22px;border:1px solid var(--border2);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;color:transparent;font-size:13px}
+.check-wrap input:checked+.check-box{background:var(--green-dim);border-color:var(--green);color:var(--green2)}
+.routine-text{flex:1}
+.routine-text h3{font-size:14px;font-weight:400;color:var(--text);margin-bottom:3px;transition:color .2s}
+.routine-text small{font-size:11px;color:var(--text3);letter-spacing:.5px;line-height:1.5}
+.routine-item.checked .routine-text h3{color:var(--text3);text-decoration:line-through;text-decoration-color:var(--text3)}
+.routine-textarea{margin-top:10px}
+.progress-wrap{margin-top:16px}
+.progress-track{background:var(--border);height:2px;border-radius:1px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--green),var(--green2));border-radius:1px;transition:width .4s ease}
+.progress-label{text-align:right;font-size:10px;color:var(--text3);margin-top:4px;letter-spacing:1px}
+
+/* CONDITION */
+.total-wrap{text-align:center;padding:16px 0 24px}
+.total-num{font-family:'Cormorant Garamond',serif;font-size:62px;font-weight:300;color:var(--green2);line-height:1}
+.total-label{font-size:10px;color:var(--text3);letter-spacing:3px;margin-top:4px}
+.metric-row{margin-bottom:22px}
+.metric-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.metric-name{font-size:13px;font-weight:400;color:var(--text);letter-spacing:.5px}
+.metric-cat{font-size:9px;color:var(--text3);letter-spacing:1.5px;margin-top:1px}
+.metric-value{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--green2);font-weight:300;min-width:36px;text-align:right}
+input[type="range"]{-webkit-appearance:none;width:100%;height:3px;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--green);border:2px solid var(--bg);box-shadow:0 0 10px var(--green-glow);transition:box-shadow .2s}
+input[type="range"]:hover::-webkit-slider-thumb{box-shadow:0 0 18px var(--green-glow)}
+.slider-labels{display:flex;justify-content:space-between;margin-top:4px}
+.slider-labels span{font-size:10px;color:var(--text3)}
+.chart-wrap{position:relative;height:300px;margin-top:8px}
+
+/* GROUP LABEL */
+.group-label{font-size:10px;letter-spacing:3px;color:var(--green);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border);font-weight:400}
+
+/* STATUS */
+.level-card{background:linear-gradient(135deg,var(--card),#0e1a0a);border:1px solid rgba(122,158,90,.25);border-radius:var(--radius);padding:32px;margin-bottom:20px;text-align:center}
+.level-orb{width:110px;height:110px;border-radius:50%;background:radial-gradient(circle at 35% 35%,var(--green2),#3a6a20 60%,#0e1a0a);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:40px;color:#fff;box-shadow:0 0 50px rgba(122,158,90,.35),0 0 90px rgba(60,106,32,.18);position:relative}
+.level-orb::after{content:'';position:absolute;top:14%;left:18%;width:32%;height:16%;background:rgba(255,255,255,.22);border-radius:50%;transform:rotate(-30deg)}
+.lv-big-label{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--xp);letter-spacing:3px;margin-bottom:4px}
+.lv-big-title{font-size:15px;color:var(--text);letter-spacing:2px;margin-bottom:20px;font-weight:400}
+.xp-bar-wrap{max-width:320px;margin:0 auto}
+.xp-track{height:7px;background:var(--border2);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--xp),var(--green2));border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.xp-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);letter-spacing:1px}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 10px;text-align:center}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--green2);line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:10px;color:var(--text3);letter-spacing:1.5px}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.ach-badge{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;transition:border-color .2s}
+.ach-badge.unlocked{border-color:var(--green);background:var(--green-dim)}
+.ach-icon{font-size:24px;margin-bottom:6px;filter:grayscale(1);opacity:.3;transition:all .3s}
+.ach-badge.unlocked .ach-icon{filter:none;opacity:1}
+.ach-name{font-size:11px;color:var(--text2);letter-spacing:.5px}
+.ach-desc{font-size:9px;color:var(--text3);margin-top:2px}
+
+/* LEVEL UP MODAL */
+.lvup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.lvup-overlay.show{opacity:1;pointer-events:all}
+.lvup-box{background:linear-gradient(135deg,var(--card),#0e1a0a);border:1px solid rgba(122,158,90,.5);border-radius:20px;padding:48px 40px;text-align:center;max-width:340px;width:90%;box-shadow:0 0 80px rgba(122,158,90,.3);animation:lvupPop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes lvupPop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.lvup-stars{font-size:28px;letter-spacing:6px;margin-bottom:12px}
+.lvup-title{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:6px;color:var(--green2);margin-bottom:8px}
+.lvup-lv{font-family:'Cormorant Garamond',serif;font-size:60px;color:#fff;font-weight:300;line-height:1}
+.lvup-new-title{font-size:15px;color:var(--gold2);margin-top:8px;letter-spacing:2px}
+.lvup-close{margin-top:24px;background:var(--green-dim);border:1px solid var(--green);color:var(--green2);font-size:12px;letter-spacing:3px;padding:10px 28px;border-radius:40px;cursor:pointer;font-family:'Noto Sans JP',sans-serif;transition:all .2s}
+
+/* COMMON */
+.today-badge{text-align:center;font-size:11px;color:var(--text3);letter-spacing:3px;margin-bottom:28px}
+.save-btn{display:block;width:100%;max-width:280px;margin:32px auto 0;background:transparent;border:1px solid var(--green);color:var(--green2);font-family:'Cormorant Garamond',serif;font-size:16px;letter-spacing:4px;padding:14px 32px;border-radius:40px;cursor:pointer;transition:all .3s}
+.save-btn:hover{background:var(--green-dim);box-shadow:0 0 28px var(--green-glow)}
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--green);color:var(--green2);font-size:12px;letter-spacing:2px;padding:12px 28px;border-radius:40px;transition:transform .4s ease;z-index:1000;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.xp-float{position:fixed;pointer-events:none;z-index:10001;font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--xp);font-weight:300;letter-spacing:2px;animation:floatUp 1.4s ease-out forwards}
+@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-60px)}}
+
+/* SCORE SECTION */
+.score-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px}
+.score-item label{font-size:10px;letter-spacing:1.5px;color:var(--text3);display:block;margin-bottom:5px}
+.score-item input[type="number"]{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--green2);font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;padding:8px 14px;outline:none;transition:border-color .2s;text-align:center}
+.score-item input[type="number"]:focus{border-color:var(--green)}
+.score-item input[type="number"]::placeholder{color:var(--text3);font-size:14px;font-family:'Noto Sans JP',sans-serif}
+
+/* HOLE EMOTION GRID */
+.hole-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:6px}
+.hole-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.hole-num{font-size:9px;color:var(--text3);letter-spacing:1px}
+.hole-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--green2);font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:300;padding:6px 2px;text-align:center;outline:none;transition:border-color .2s}
+.hole-input:focus{border-color:var(--green)}
+.hole-input.filled{border-color:rgba(122,158,90,.4);background:var(--green-dim)}
+@media(max-width:520px){.hole-grid{grid-template-columns:repeat(6,1fr)}}
+
+@media(max-width:520px){
+  .card{padding:20px 16px}
+  .kpi-grid{grid-template-columns:1fr}
+  .score-row{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-line"><span class="brand-label">PEAK GOLF</span></div>
+  <h1>自分史上<em>最高のゴルフ</em>へ</h1>
+  <p class="tagline">MENTAL PERFORMANCE TRACKER FOR GOLF</p>
+  <div class="level-widget" onclick="showTab('status',null)">
+    <div class="lv-badge" id="headerLv">Lv.1</div>
+    <div class="lv-info">
+      <div class="lv-title-sm" id="headerTitle">BEGINNER</div>
+      <div class="lv-bar-wrap"><div class="lv-bar" id="headerBar" style="width:0%"></div></div>
+      <div class="lv-xp-txt" id="headerXp">0 / 100 XP</div>
+    </div>
+    <div class="lv-streak">⛳ <span id="headerStreak">0</span>日連続</div>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('goals',this)">GOALS</button>
+  <button class="tab-btn" onclick="showTab('round',this)">ROUND</button>
+  <button class="tab-btn" onclick="showTab('condition',this)">CONDITION</button>
+  <button class="tab-btn" onclick="showTab('memo',this)">MEMO</button>
+  <button class="tab-btn" onclick="showTab('status',this)">⛳ STATUS</button>
+</nav>
+
+<main>
+
+<!-- ====== GOALS ====== -->
+<div id="goals" class="section active">
+  <p class="today-badge" id="todayDate"></p>
+
+  <div class="card">
+    <div class="card-title">Vision & Goals</div>
+
+    <!-- DREAM -->
+    <div class="goal-block">
+      <div class="goal-block-header"><span class="goal-badge dream">✦ DREAM</span></div>
+      <textarea rows="2" placeholder="ゴルファーとしての究極の夢・ありたい姿は？" id="gDream"></textarea>
+      <div class="goal-images">
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'dream',0)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-dream-0"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'dream',1)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-dream-1"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'dream',2)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-dream-2"></div>
+      </div>
+    </div>
+
+    <!-- 3年後 -->
+    <div class="goal-block">
+      <div class="goal-block-header"><span class="goal-badge">3年後</span></div>
+      <textarea rows="2" placeholder="例）ハンデ〇〇、競技で〇〇達成..." id="g3"></textarea>
+      <div class="goal-images">
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g3',0)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g3-0"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g3',1)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g3-1"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g3',2)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g3-2"></div>
+      </div>
+    </div>
+
+    <!-- 2年後 -->
+    <div class="goal-block">
+      <div class="goal-block-header"><span class="goal-badge">2年後</span></div>
+      <textarea rows="2" placeholder="例）アベレージ〇〇台、〇〇競技出場..." id="g2"></textarea>
+      <div class="goal-images">
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g2',0)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g2-0"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g2',1)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g2-1"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g2',2)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g2-2"></div>
+      </div>
+    </div>
+
+    <!-- 今年 -->
+    <div class="goal-block">
+      <div class="goal-block-header"><span class="goal-badge">今年</span></div>
+      <textarea rows="2" placeholder="今年達成する具体的なゴールは？" id="g1"></textarea>
+      <div class="goal-images">
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g1',0)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g1-0"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g1',1)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g1-1"></div>
+        <div class="goal-img-slot"><input type="file" accept="image/*" onchange="loadImg(this,'g1',2)"><div class="slot-plus">＋</div><div class="slot-lbl">IMAGE</div><img id="gimg-g1-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">今年のゴール達成 KPI</div>
+    <div class="kpi-grid">
+      <div class="kpi-item"><label>KPI 01</label><input type="text" placeholder="例）平均スコア" id="kpi1"></div>
+      <div class="kpi-item"><label>KPI 02</label><input type="text" placeholder="例）フェアウェイキープ率" id="kpi2"></div>
+      <div class="kpi-item"><label>KPI 03</label><input type="text" placeholder="例）パット数" id="kpi3"></div>
+      <div class="kpi-item"><label>KPI 04</label><input type="text" placeholder="例）GIR率" id="kpi4"></div>
+      <div class="kpi-item"><label>KPI 05</label><input type="text" placeholder="例）競技ラウンド数" id="kpi5"></div>
+      <div class="kpi-item"><label>KPI 06</label><input type="text" placeholder="例）練習頻度" id="kpi6"></div>
+    </div>
+  </div>
+  <button class="save-btn" onclick="saveAll()">SAVE</button>
+</div>
+
+<!-- ====== ROUND ROUTINE ====== -->
+<div id="round" class="section">
+  <p class="today-badge" id="todayDateR"></p>
+
+  <!-- スコア入力 -->
+  <div class="card">
+    <div class="card-title">Today's Round</div>
+    <div class="score-row">
+      <div class="score-item"><label>SCORE</label><input type="number" placeholder="72" id="scoreTotal"></div>
+      <div class="score-item"><label>PUTTS</label><input type="number" placeholder="32" id="scorePutts"></div>
+      <div class="score-item"><label>COURSE</label><input type="text" placeholder="コース名" id="scoreCourse" style="font-size:13px;font-family:'Noto Sans JP',sans-serif;text-align:left"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ラウンド前ルーティン</div>
+
+    <div class="routine-item" id="rri0">
+      <div class="check-wrap"><input type="checkbox" id="rc0" onchange="toggleRCheck(0)"><label class="check-box" for="rc0">✓</label></div>
+      <div class="routine-text"><h3>１分間マインドフルネス</h3><small>深い呼吸と共に脳と体がリラックス</small></div>
+    </div>
+
+    <div class="routine-item" id="rri1">
+      <div class="check-wrap"><input type="checkbox" id="rc1" onchange="toggleRCheck(1)"><label class="check-box" for="rc1">✓</label></div>
+      <div class="routine-text"><h3>感謝瞑想</h3><small>当たり前ではない感謝できることへ感謝しよう</small></div>
+    </div>
+
+    <div class="routine-item" id="rri2">
+      <div class="check-wrap"><input type="checkbox" id="rc2" onchange="toggleRCheck(2)"><label class="check-box" for="rc2">✓</label></div>
+      <div class="routine-text">
+        <h3>パフォーマンス目標</h3>
+        <small>今日はどんなメンタルで・どんなゴルフをするか</small>
+        <div class="routine-textarea"><textarea rows="2" placeholder="例）今日は基本的にリラックスしたメンタルで、攻めすぎずスマートなゴルフをする" id="rt_perf"></textarea></div>
+      </div>
+    </div>
+
+    <div class="routine-item" id="rri3">
+      <div class="check-wrap"><input type="checkbox" id="rc3" onchange="toggleRCheck(3)"><label class="check-box" for="rc3">✓</label></div>
+      <div class="routine-text">
+        <h3>マネジメント目標</h3>
+        <small>番手や球筋を決めてやり抜く。守るホールなど</small>
+        <div class="routine-textarea"><textarea rows="2" placeholder="例）番手を守る。〇〇番・〇〇番ホールは確実にパーを取りに行く" id="rt_mng"></textarea></div>
+      </div>
+    </div>
+
+    <div class="routine-item" id="rri4">
+      <div class="check-wrap"><input type="checkbox" id="rc4" onchange="toggleRCheck(4)"><label class="check-box" for="rc4">✓</label></div>
+      <div class="routine-text">
+        <h3>ショートゲーム目標</h3>
+        <small>アプローチやパターのテーマ</small>
+        <div class="routine-textarea"><textarea rows="2" placeholder="例）アプローチは振り幅を一定に。パターは打ち出し方向を重視する" id="rt_short"></textarea></div>
+      </div>
+    </div>
+
+    <div class="routine-item" id="rri5">
+      <div class="check-wrap"><input type="checkbox" id="rc5" onchange="toggleRCheck(5)"><label class="check-box" for="rc5">✓</label></div>
+      <div class="routine-text">
+        <h3>行動目標</h3>
+        <small>ルーティン・スイングテーマ・リズムなど</small>
+        <div class="routine-textarea"><textarea rows="2" placeholder="例）ルーティンを丁寧に実行する。スイングは〇〇を守る。良いリズムでプレーする" id="rt_action"></textarea></div>
+      </div>
+    </div>
+
+    <div class="routine-item" id="rri6">
+      <div class="check-wrap"><input type="checkbox" id="rc6" onchange="toggleRCheck(6)"><label class="check-box" for="rc6">✓</label></div>
+      <div class="routine-text"><h3>プレーイメトレ</h3><small>今日どんなラウンドにするかを具体的にイメージする</small></div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-bar" id="rProgressBar" style="width:0%"></div></div>
+      <p class="progress-label" id="rProgressLabel">0 / 7 完了</p>
+    </div>
+  </div>
+  <button class="save-btn" onclick="saveAll()">SAVE</button>
+</div>
+
+<!-- ====== CONDITION ====== -->
+<div id="condition" class="section">
+  <p class="today-badge" id="todayDateC"></p>
+  <div class="card">
+    <div class="total-wrap">
+      <div class="total-num" id="totalScore">50</div>
+      <div class="total-label">TOTAL PERFORMER SCORE / 110</div>
+    </div>
+
+    <div class="group-label">COURSE MANAGEMENT</div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">マネジメント</div><div class="metric-cat">Course Management · Decision Making</div></div><div class="metric-value" id="v0">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(0,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+
+    <div class="group-label">SHOT QUALITY</div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">ショット</div><div class="metric-cat">Ball Striking · Swing Execution</div></div><div class="metric-value" id="v1">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(1,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">アプローチ</div><div class="metric-cat">Short Game · Chipping · Pitching</div></div><div class="metric-value" id="v2">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(2,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">パター</div><div class="metric-cat">Putting · Green Reading · Speed Control</div></div><div class="metric-value" id="v3">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(3,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+
+    <div class="group-label">MENTAL PERFORMANCE</div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">一打への集中</div><div class="metric-cat">Shot Focus · Present Moment</div></div><div class="metric-value" id="v4">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(4,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">呼吸の深さ</div><div class="metric-cat">Breath Control · Relaxation</div></div><div class="metric-value" id="v5">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(5,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">インコントロール</div><div class="metric-cat">Emotional Regulation · Composure</div></div><div class="metric-value" id="v6">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(6,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">グリット</div><div class="metric-cat">Grit · Perseverance · Never Give Up</div></div><div class="metric-value" id="v7">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(7,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">セルフトーク</div><div class="metric-cat">Self Talk · Inner Dialogue · Positivity</div></div><div class="metric-value" id="v8">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(8,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+
+    <div class="group-label">BODY & EMOTION</div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">歩き方</div><div class="metric-cat">Posture · Pace · Body Language</div></div><div class="metric-value" id="v9">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(9,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+    <div class="metric-row"><div class="metric-header"><div><div class="metric-name">体調</div><div class="metric-cat">Physical Condition · Energy Level</div></div><div class="metric-value" id="v10">5</div></div><input type="range" min="0" max="10" value="5" oninput="updateMetric(10,this.value)"><div class="slider-labels"><span>0</span><span>5</span><span>10</span></div></div>
+  </div>
+
+  <!-- 感情チェック：ホール毎 -->
+  <div class="card">
+    <div class="card-title">感情チェック <span style="font-size:12px;color:var(--text3);letter-spacing:1px;font-family:'Noto Sans JP',sans-serif;font-weight:300">— ホール毎の感情を数値化</span></div>
+    <p style="font-size:11px;color:var(--text3);margin-bottom:16px;letter-spacing:.5px">各ホール終了後の感情状態を 0（最悪）〜 10（最高）で記録しましょう</p>
+    <div class="hole-grid" id="holeGrid"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:10px;color:var(--text3);letter-spacing:1px">
+      <span>平均感情スコア</span>
+      <span id="emotionAvg" style="color:var(--green2);font-family:'Cormorant Garamond',serif;font-size:16px">—</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Performer Radar</div>
+    <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
+  </div>
+  <button class="save-btn" onclick="saveAll()">SAVE</button>
+</div>
+
+<!-- ====== MEMO ====== -->
+<div id="memo" class="section">
+  <p class="today-badge" id="todayDateMemo"></p>
+  <div class="card">
+    <div class="card-title">Round MEMO</div>
+    <textarea style="min-height:180px" rows="12" placeholder="今日のラウンドの気づき・感情・学び・次回への課題...&#10;&#10;良かったこと：&#10;改善点：&#10;次回のテーマ：" id="memoText"></textarea>
+  </div>
+  <button class="save-btn" onclick="saveAll()">SAVE</button>
+</div>
+
+<!-- ====== STATUS ====== -->
+<div id="status" class="section">
+  <p class="today-badge" id="todayDateS"></p>
+  <div class="level-card">
+    <div class="lv-big-label" id="statusLvLabel">LEVEL 1</div>
+    <div class="level-orb" id="statusOrb">1</div>
+    <div class="lv-big-title" id="statusTitle">BEGINNER</div>
+    <div class="xp-bar-wrap">
+      <div class="xp-track"><div class="xp-fill" id="statusXpBar" style="width:0%"></div></div>
+      <div class="xp-labels"><span id="statusXpCur">0 XP</span><span id="statusXpNext">次のレベルまで 100 XP</span></div>
+    </div>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-box"><div class="stat-num" id="statDays">0</div><div class="stat-lbl">ROUNDS</div></div>
+    <div class="stat-box"><div class="stat-num" id="statStreak">0</div><div class="stat-lbl">⛳ STREAK</div></div>
+    <div class="stat-box"><div class="stat-num" id="statXp">0</div><div class="stat-lbl">TOTAL XP</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Achievements</div>
+    <div class="ach-grid" id="achGrid"></div>
+  </div>
+</div>
+
+</main>
+
+<!-- Level Up Modal -->
+<div class="lvup-overlay" id="lvupOverlay">
+  <div class="lvup-box">
+    <div class="lvup-stars">⛳ ✦ ⛳</div>
+    <div class="lvup-title">LEVEL UP !</div>
+    <div class="lvup-lv" id="lvupNum">2</div>
+    <div class="lvup-new-title" id="lvupNewTitle">PLAYER</div>
+    <button class="lvup-close" onclick="document.getElementById('lvupOverlay').classList.remove('show')">NEXT HOLE →</button>
+  </div>
+</div>
+<div class="toast" id="toast">⛳ 保存しました</div>
+
+<script>
+const today = new Date();
+const todayKey = today.toISOString().slice(0,10);
+const dateStr = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+['todayDate','todayDateR','todayDateC','todayDateMemo','todayDateS'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=dateStr;});
+
+// ——— LEVEL SYSTEM ———
+const LV_TITLES=['BEGINNER','PLAYER','SINGLE FIGURE','SCRATCH','CLUB CHAMPION','ELITE AMATEUR','TOUR CONTENDER','TOUR PRO','CHAMPION TOUR','PEAK GOLFER'];
+const LV_XP=[100,150,220,300,400,520,660,820,1000,Infinity];
+const ACHS=[
+  {id:'first',icon:'🌱',name:'ファーストラウンド',desc:'初めて保存'},
+  {id:'streak3',icon:'🔥',name:'3日連続',desc:'3日連続記録'},
+  {id:'streak7',icon:'⚡',name:'7日連続',desc:'1週間継続'},
+  {id:'streak30',icon:'💎',name:'30日連続',desc:'1ヶ月継続'},
+  {id:'routine_full',icon:'☀️',name:'完璧な準備',desc:'ルーティン全完了'},
+  {id:'score100',icon:'🎯',name:'コンディション80+',desc:'スコア80点以上'},
+  {id:'perfect',icon:'🏆',name:'満点',desc:'コンディション100点'},
+  {id:'vision',icon:'🖼️',name:'ビジョンボード',desc:'目標画像を追加'},
+  {id:'lv5',icon:'⛳',name:'レベル5達成',desc:'Lv.5に到達'},
+  {id:'lv10',icon:'👑',name:'PEAK GOLFER',desc:'最高レベルに到達'},
+];
+
+function getProfile(){try{return JSON.parse(localStorage.getItem('peakgolf_profile')||'{}')}catch(e){return{}}}
+function saveProfile(p){localStorage.setItem('peakgolf_profile',JSON.stringify(p))}
+
+function calcLevel(xp){
+  let lv=1,x=xp;
+  for(let i=0;i<LV_XP.length;i++){if(x<LV_XP[i])return{lv:lv+i,xpIn:x,xpNeed:LV_XP[i]};if(i<LV_XP.length-1)x-=LV_XP[i];else return{lv:LV_XP.length,xpIn:0,xpNeed:1};}
+  return{lv:1,xpIn:0,xpNeed:LV_XP[0]};
+}
+
+function renderLvUI(p){
+  const xp=p.totalXP||0,streak=p.streak||0,days=p.totalDays||0;
+  const{lv,xpIn,xpNeed}=calcLevel(xp);
+  const pct=Math.round(xpIn/xpNeed*100);
+  const title=LV_TITLES[Math.min(lv-1,LV_TITLES.length-1)];
+  document.getElementById('headerLv').textContent='Lv.'+lv;
+  document.getElementById('headerTitle').textContent=title;
+  document.getElementById('headerBar').style.width=pct+'%';
+  document.getElementById('headerXp').textContent=xpIn+' / '+xpNeed+' XP';
+  document.getElementById('headerStreak').textContent=streak;
+  document.getElementById('statusLvLabel').textContent='LEVEL '+lv;
+  document.getElementById('statusOrb').textContent=lv;
+  document.getElementById('statusTitle').textContent=title;
+  document.getElementById('statusXpBar').style.width=pct+'%';
+  document.getElementById('statusXpCur').textContent=xpIn+' XP';
+  document.getElementById('statusXpNext').textContent='次のレベルまで '+(xpNeed-xpIn)+' XP';
+  document.getElementById('statDays').textContent=days;
+  document.getElementById('statStreak').textContent=streak;
+  document.getElementById('statXp').textContent=xp;
+  const unlocked=p.achievements||[];
+  const grid=document.getElementById('achGrid');grid.innerHTML='';
+  ACHS.forEach(a=>{
+    const d=document.createElement('div');const u=unlocked.includes(a.id);
+    d.className='ach-badge'+(u?' unlocked':'');
+    d.innerHTML=`<div class="ach-icon">${a.icon}</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div>`;
+    grid.appendChild(d);
+  });
+}
+
+function addXP(amt,label){
+  const p=getProfile();const oldXP=p.totalXP||0;
+  const{lv:oldLv}=calcLevel(oldXP);
+  p.totalXP=(p.totalXP||0)+amt;
+  const{lv:newLv}=calcLevel(p.totalXP);
+  saveProfile(p);renderLvUI(p);
+  const el=document.createElement('div');
+  el.className='xp-float';el.textContent='+'+amt+' XP '+(label||'');
+  el.style.cssText=`top:${window.scrollY+120}px;left:50%;transform:translateX(-50%)`;
+  document.body.appendChild(el);setTimeout(()=>el.remove(),1500);
+  if(newLv>oldLv){
+    document.getElementById('lvupNum').textContent=newLv;
+    document.getElementById('lvupNewTitle').textContent=LV_TITLES[Math.min(newLv-1,LV_TITLES.length-1)];
+    document.getElementById('lvupOverlay').classList.add('show');
+  }
+}
+
+function unlockAch(id){
+  const p=getProfile();const achs=p.achievements||[];
+  if(!achs.includes(id)){achs.push(id);p.achievements=achs;saveProfile(p);addXP(50,'🏅 '+ACHS.find(a=>a.id===id)?.name);renderLvUI(p);}
+}
+
+// ——— TABS ———
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  if(id==='condition')setTimeout(initChart,100);
+  if(id==='status')renderLvUI(getProfile());
+}
+
+// ——— ROUND CHECKS ———
+let rchecks=[false,false,false,false,false,false,false];
+function toggleRCheck(i){
+  rchecks[i]=document.getElementById('rc'+i).checked;
+  document.getElementById('rri'+i).classList.toggle('checked',rchecks[i]);
+  const done=rchecks.filter(Boolean).length;
+  document.getElementById('rProgressBar').style.width=(done/7*100)+'%';
+  document.getElementById('rProgressLabel').textContent=done+' / 7 完了';
+}
+
+// ——— METRICS (10 items) ———
+let metrics=[5,5,5,5,5,5,5,5,5,5,5];
+let chart=null;
+
+// ——— BUILD HOLE GRID ———
+let holeEmotions = new Array(18).fill('');
+function buildHoleGrid(){
+  const grid = document.getElementById('holeGrid');
+  grid.innerHTML = '';
+  for(let h=1;h<=18;h++){
+    const cell = document.createElement('div');
+    cell.className = 'hole-cell';
+    cell.innerHTML = `<div class="hole-num">H${h}</div><input class="hole-input" type="number" min="0" max="10" placeholder="—" id="hole${h}" oninput="updateEmotion(${h-1},this.value)">`;
+    grid.appendChild(cell);
+  }
+}
+function updateEmotion(i, val){
+  holeEmotions[i] = val;
+  const inp = document.getElementById('hole'+(i+1));
+  if(inp) inp.classList.toggle('filled', val !== '');
+  const filled = holeEmotions.filter(v=>v!=='');
+  if(filled.length>0){
+    const avg = (filled.reduce((a,b)=>a+parseFloat(b||0),0)/filled.length).toFixed(1);
+    document.getElementById('emotionAvg').textContent = avg + ' / 10';
+  } else {
+    document.getElementById('emotionAvg').textContent = '—';
+  }
+}
+buildHoleGrid();
+
+function updateMetric(i,val){
+  metrics[i]=parseInt(val);
+  document.getElementById('v'+i).textContent=val;
+  document.getElementById('totalScore').textContent=metrics.reduce((a,b)=>a+b,0);
+  if(chart){chart.data.datasets[0].data=[...metrics];chart.update('none');}
+}
+
+function initChart(){
+  if(chart){chart.destroy();chart=null;}
+  const ctx=document.getElementById('radarChart').getContext('2d');
+  chart=new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:['マネジメント','ショット','アプローチ','パター','一打集中','呼吸','インコントロール','グリット','セルフトーク','歩き方','体調'],
+      datasets:[{label:'Today',data:[...metrics],
+        backgroundColor:'rgba(122,158,90,0.1)',
+        borderColor:'rgba(122,158,90,0.65)',
+        pointBackgroundColor:'#7a9e5a',
+        pointBorderColor:'#0a0c0a',
+        pointRadius:5,borderWidth:1.5}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{r:{min:0,max:10,
+        ticks:{stepSize:2,color:'rgba(89,102,80,.8)',backdropColor:'transparent',font:{size:9}},
+        grid:{color:'rgba(37,43,30,.8)'},
+        angleLines:{color:'rgba(37,43,30,.8)'},
+        pointLabels:{color:'#9aad80',font:{family:"'Noto Sans JP',sans-serif",size:10,weight:'300'}}
+      }},
+      plugins:{legend:{display:false}}
+    }
+  });
+}
+
+// ——— GOAL IMAGES ———
+function loadImg(input,goal,idx){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('gimg-'+goal+'-'+idx);
+    const slot=input.parentElement;
+    if(img){img.src=e.target.result;img.style.display='block';}
+    const plus=slot.querySelector('.slot-plus');const lbl=slot.querySelector('.slot-lbl');
+    if(plus)plus.style.display='none';if(lbl)lbl.style.display='none';
+    unlockAch('vision');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ——— SAVE ———
+function saveAll(){
+  const p=getProfile();
+  const yesterday=new Date(today);yesterday.setDate(yesterday.getDate()-1);
+  const yKey=yesterday.toISOString().slice(0,10);
+  if(p.lastSaveDate!==todayKey){
+    p.streak=(p.lastSaveDate===yKey)?(p.streak||0)+1:1;
+    p.totalDays=(p.totalDays||0)+1;
+    p.lastSaveDate=todayKey;
+    saveProfile(p);addXP(20,'📝 記録');
+  }
+  const data={
+    date:todayKey,
+    goals:{dream:document.getElementById('gDream').value,y3:document.getElementById('g3').value,y2:document.getElementById('g2').value,y1:document.getElementById('g1').value},
+    kpis:[1,2,3,4,5,6].map(i=>document.getElementById('kpi'+i).value),
+    score:{total:document.getElementById('scoreTotal').value,putts:document.getElementById('scorePutts').value,course:document.getElementById('scoreCourse').value},
+    round:{checks:rchecks,perf:document.getElementById('rt_perf').value,mng:document.getElementById('rt_mng').value,short:document.getElementById('rt_short').value,action:document.getElementById('rt_action').value},
+    condition:metrics,
+    holeEmotions: holeEmotions,
+    memo:document.getElementById('memoText').value,
+  };
+  localStorage.setItem('peakgolf_'+todayKey,JSON.stringify(data));
+
+  unlockAch('first');
+  if(rchecks.every(Boolean)){unlockAch('routine_full');addXP(15,'☀️ ルーティン完了');}
+  const total=metrics.reduce((a,b)=>a+b,0);
+  if(total>=80)unlockAch('score100');
+  if(total>=100){unlockAch('perfect');addXP(30,'🏆 満点！');}
+  const{lv}=calcLevel(getProfile().totalXP||0);
+  if(lv>=5)unlockAch('lv5');
+  if(lv>=10)unlockAch('lv10');
+  if((getProfile().streak||0)>=3)unlockAch('streak3');
+  if((getProfile().streak||0)>=7)unlockAch('streak7');
+  if((getProfile().streak||0)>=30)unlockAch('streak30');
+  renderLvUI(getProfile());
+  const toast=document.getElementById('toast');
+  toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),2200);
+}
+
+// ——— LOAD ———
+function loadSaved(){
+  const saved=localStorage.getItem('peakgolf_'+todayKey);
+  if(!saved)return;
+  try{
+    const d=JSON.parse(saved);
+    if(d.goals){
+      if(d.goals.dream)document.getElementById('gDream').value=d.goals.dream;
+      if(d.goals.y3)document.getElementById('g3').value=d.goals.y3;
+      if(d.goals.y2)document.getElementById('g2').value=d.goals.y2;
+      if(d.goals.y1)document.getElementById('g1').value=d.goals.y1;
+    }
+    if(d.kpis)d.kpis.forEach((v,i)=>{const el=document.getElementById('kpi'+(i+1));if(el)el.value=v;});
+    if(d.score){
+      if(d.score.total)document.getElementById('scoreTotal').value=d.score.total;
+      if(d.score.putts)document.getElementById('scorePutts').value=d.score.putts;
+      if(d.score.course)document.getElementById('scoreCourse').value=d.score.course;
+    }
+    if(d.round){
+      if(d.round.checks)d.round.checks.forEach((v,i)=>{if(v){document.getElementById('rc'+i).checked=true;toggleRCheck(i);}});
+      if(d.round.perf)document.getElementById('rt_perf').value=d.round.perf;
+      if(d.round.mng)document.getElementById('rt_mng').value=d.round.mng;
+      if(d.round.short)document.getElementById('rt_short').value=d.round.short;
+      if(d.round.action)document.getElementById('rt_action').value=d.round.action;
+    }
+    if(d.condition)d.condition.forEach((v,i)=>{
+      const inputs=document.querySelectorAll('input[type="range"]');
+      if(inputs[i]){inputs[i].value=v;updateMetric(i,v);}
+    });
+    if(d.holeEmotions)d.holeEmotions.forEach((v,i)=>{
+      if(v!==''){const inp=document.getElementById('hole'+(i+1));if(inp){inp.value=v;updateEmotion(i,v);}}
+    });
+    if(d.memo)document.getElementById('memoText').value=d.memo;
+  }catch(e){}
+}
+
+loadSaved();
+renderLvUI(getProfile());
+</script>
+</body>
+</html>
